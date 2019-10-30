@@ -1,4 +1,4 @@
-本文为自己根据网上的[视频资源](https://www.bilibili.com/video/av55629580) 和 [专栏文章](https://www.fangzhipeng.com/spring-cloud.html) 整理学习而来，作为初学者，十分感谢前辈们的讲解。
+本文为自己根据网上的[视频资源](https://www.bilibili.com/video/av62689841) 和 [专栏文章](https://www.fangzhipeng.com/spring-cloud.html) 整理学习而来，作为初学者，十分感谢前辈们的讲解。
 
 # 1.认识
 
