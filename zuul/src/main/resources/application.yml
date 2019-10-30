@@ -1,0 +1,15 @@
+server:
+  port: 8030
+spring:
+  application:
+    name: gateway
+
+eureka:
+  client:
+    service-url:
+      defaultZone :  http://localhost:8761/eureka
+
+
+zuul:
+  routes:
+    provider: /p/**  #provider是服务提供者的名字。/p是为他起的别名、做的映射，使用的时候通过网关请求这个就行了。
