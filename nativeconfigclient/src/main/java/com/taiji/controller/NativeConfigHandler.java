@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class NativeConfigHandler {
     @Value("${server.port}")
     private String port;
-    @Value("{foo}")
+    @Value("${foo}")
     private String foo;
 
     @GetMapping("/index")
