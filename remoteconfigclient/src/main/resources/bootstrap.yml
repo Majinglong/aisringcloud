@@ -1,0 +1,12 @@
+spring:
+  cloud:
+    config:
+      name: remoteconfigclient # 当前服务注册在注册中心的名称，与远程仓库的配置文件名对应
+      label: master #git仓库的分支
+      discovery:
+        enabled: true # 是否开启config服务支持发现
+        service-id: remoteconfigserver #配置中心在eureka server上的注册的名称.先找配置中心，根据uri 、账号密码到远程去找配置
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
