@@ -1,4 +1,5 @@
 [toc]
+
 # 1.认识
 
 * 拆分单体应用，解耦和。![2b483ef3a3e43cc73bf6f8db9126fadc.png](en-resource://database/2614:1)
