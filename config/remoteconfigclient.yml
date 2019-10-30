@@ -2,7 +2,8 @@ server:
   port: 8070
 spring:
   application:
-    name: configclient
+    name: remoteconfigclient
+foo: justDoIT
 eureka:
   client:
     serviceUrl:
