@@ -1,25 +1,21 @@
-[toc]
+本文为自己根据网上的[视频资源](https://www.bilibili.com/video/av55629580) 和 [专栏文章](https://www.fangzhipeng.com/spring-cloud.html) 整理学习而来，作为初学者，十分感谢前辈们的讲解。
 
 # 1.认识
 
-* 拆分单体应用，解耦和。![2b483ef3a3e43cc73bf6f8db9126fadc.png](en-resource://database/2614:1)
-![c57eb2252e50b2085fb67a52e49a945d.png](en-resource://database/2616:1)
-
+* 拆分单体应用，解耦和。
 * spring cloud架构
-![773d96421c4212a8dfc6f73f6fe7501f.png](en-resource://database/2618:1)
-
     * Eureka Serverr:注册中心
     *  Ribbon/FeinClient完成负载均衡
     *  Zuul实现网关
     *  Hystrix 熔断器
-*   核心组件：
-![bc8976828fb0cf8699aec0f9afbe1dfa.png](en-resource://database/2620:1)
+
+spring cloud 版本：[version](https://www.cnblogs.com/xingzc/p/9414208.html)
 
 # 2. 搭建项目
 ## 2.1 服务治理
 * 服务治理：服务提供者-服务消费者-注册中心
     * 功能：服务注册、服务发现
-    * spring cloud 集成Eureka实现服务治理。![41845e42080bda4022c717bfd976d928.png](en-resource://database/2622:1)
+    * spring cloud 集成Eureka实现服务治理。
     
 
 * 服务状态：up 可用 ；down 不可用
@@ -761,4 +757,172 @@ public class NativeConfigHandler {
 
 ### 2.6.2 远程配置
 
-* config server推到远程仓库，仓库读取文件。
+* 单独建立配置文件，推到远程仓库。调用配置的客户端根据服务名到注册中心找到配置中心，根据配置中心的地址、账号、密码从远程仓库中读取到配置文件。
+* 远程配置中心的服务端:依赖 配置 启动类
+```
+       <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-config-server</artifactId>
+            <version>2.0.2.RELEASE</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+            <version>2.0.2.RELEASE</version>
+        </dependency>
+
+
+server:
+  port: 8888
+spring:
+  application:
+    name: remoteconfigserver
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/Majinglong/aisringcloud.git
+          search-paths: config
+          username: root # 改成自己的用户名
+          password: root # 改成自己的用户名
+      label: master
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+
+@SpringBootApplication
+@EnableConfigServer
+public class RemoteConfigServerApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(RemoteConfigServerApplication.class,args);
+    }
+}
+
+```
+
+* 客户端依赖
+```
+ <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-config-server</artifactId>
+            <version>2.0.2.RELEASE</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+            <version>2.0.2.RELEASE</version>
+        </dependency>
+```
+
+* 客户端配置 bootstrap.yml
+* remoteconfigclient项目名，需要跟配置文件名、配置文件里的项目名相同。
+* remoteconfigserver 服务中心名称，决定去找谁要配置
+```
+spring:
+  cloud:
+    config:
+      name: remoteconfigclient # 当前服务注册在注册中心的名称，与远程仓库的配置文件名对应
+      label: master #git仓库的分支
+      discovery:
+        enabled: true # 是否开启config服务支持发现
+        service-id: remoteconfigserver #配置中心在eureka server上的注册的名称.先找配置中心，根据uri 、账号密码到远程去找配置
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+```
+
+* 启动类和controller参考上面本地配置中心案例。
+
+## 2.7 服务追踪
+
+* 使用spring cloud zipkin组件。可以采集并且跟踪分布式系统中请求数据的组件，让开发者可以更加直观的监控到请求在各个微服务所耗费的时间等。
+* Zipkin:Zipkin Server 、 ZIPkin client
+* Spring Cloud Sleuth 主要功能就是在分布式系统中提供追踪解决方案，并且兼容支持了 zipkin，你只需要在pom文件中引入相应的依赖即可。
+* 服务追踪的术语：
+    * Span：基本工作单元，span还有其他数据信息，比如摘要、时间戳事件、关键值注释(tags)、span的ID、以及进度ID(通常是IP地址) span在不断的启动和停止，同时记录了时间信息
+    * Trace：一系列spans组成的一个树状结构。span通过一个64位ID唯一标识，trace以另一个64位ID表示
+    * Annotation：用来及时记录一个事件的存在，一些核心annotations用来定义一个请求的开始和结束
+### 2.7.1 server 搭建
+
+* 添加依赖、配置、启动项
+* 主要是依赖的2个包和启动项上的EnableZipkinServer注解
+```
+ <!--UI以web呈现，需要加这个-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.zipkin.java</groupId>
+            <artifactId>zipkin-server</artifactId>
+            <version>2.9.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.zipkin.java</groupId>
+            <artifactId>zipkin-autoconfigure-ui</artifactId>
+            <version>2.9.4</version>
+        </dependency>
+
+
+server:
+  port: 9090
+
+
+@SpringBootApplication
+@EnableZipkinServer// 声明启动 zipkin server
+public class ZipkinServerApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(ZipkinServerApplication.class,args);
+    }
+}
+```
+### 2.7.2 client搭建
+
+* 添加依赖、配置、启动项，自己写一个方法做请求的测试
+* springcloud 集成了zipkin,实际上是使用sluth做监控、zipkin显示。
+```
+ <dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-zipkin</artifactId>
+    <version>2.0.2.RELEASE</version>
+</dependency>
+
+@SpringBootApplication
+public class ZipkinClientApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(ZipkinClientApplication.class,args);
+    }
+}
+```
+```
+server:
+  port: 8090
+spring:
+  application:
+    name: zipkinclient
+  sleuth:  #zipkin展示，sleth做监控
+    web:
+      client:
+        enabled: true #启用请求监控
+    sampler:
+      probability: 1.0 # 设置采样比例，默认是1.0
+  zipkin:
+    base-url: http://localhost:9090/  #zipkin server地址
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+```
+### 2.7.3 测试结果
+
+* 访问http://localhost:9090/zipkin/查看监控界面
+* 在客户端做访问请求模拟，查看监控结果
+
